@@ -1,9 +1,19 @@
 package com.taskapp.dataaccess;
 
+import java.util.List;
+import com.taskapp.model.Task;
+import com.taskapp.model.User;
+import com.taskapp.model.Log;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+
 public class TaskDataAccess {
 
     private final String filePath;
-
     private final UserDataAccess userDataAccess;
 
     public TaskDataAccess() {
@@ -27,26 +37,60 @@ public class TaskDataAccess {
      * @see com.taskapp.dataaccess.UserDataAccess#findByCode(int)
      * @return タスクのリスト
      */
-    // public List<Task> findAll() {
-    //     try () {
+    public List<Task> findAll() {
+    List<Task> tasks = new ArrayList<>();
+    
+    try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+        String line;
 
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    //     return null;
-    // }
+        br.readLine(); 
+        
+        while ((line = br.readLine()) != null) {
+            String[] data = line.split(",");
+            
+            if (data.length == 4) {
+                int taskCode = Integer.parseInt(data[0]);
+                String taskName = data[1];
+                int status = Integer.parseInt(data[2]);
+                int repUserCode = Integer.parseInt(data[3]); 
+                
+                User repUser = userDataAccess.findByCode(repUserCode);
+                
+                if (repUser == null) {
+                    repUser = new User(-1, "担当者不明", "unknown@example.com", "unknown");
+
+                }
+
+                tasks.add(new Task(taskCode, taskName, status, repUser));
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+
+    return tasks;
+}
 
     /**
      * タスクをCSVに保存します。
      * @param task 保存するタスク
      */
-    // public void save(Task task) {
-    //     try () {
-
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    // }
+    public void save(Task task) {
+        try (FileWriter writer = new FileWriter("tasks.csv", true)) {
+            
+            writer.append(String.valueOf(task.getCode())) 
+                  .append(",")
+                  .append(task.getName())  
+                  .append(",")
+                  .append(String.valueOf(task.getStatus())) 
+                  .append(",")
+                  .append(String.valueOf(task.getRepUser().getCode())) 
+                  .append("\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }    
+    
 
     /**
      * コードを基にタスクデータを1件取得します。
