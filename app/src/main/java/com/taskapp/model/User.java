@@ -29,6 +29,10 @@ public class User {
         return this.password;
     }
 
+	public int getUserCode() {
+        return code;  
+    }
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;

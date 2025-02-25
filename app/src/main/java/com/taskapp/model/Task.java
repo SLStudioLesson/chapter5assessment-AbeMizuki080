@@ -33,6 +33,14 @@ public class Task {
         this.status = status;
     }
 
+    public int getTaskCode() {
+        return getCode();
+    }
+
+    public String toCsvFormat() {
+        return code + "," + name + "," + status + "," + repUser.getCode();
+    }
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;

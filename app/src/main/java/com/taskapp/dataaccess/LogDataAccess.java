@@ -1,7 +1,15 @@
 package com.taskapp.dataaccess;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.taskapp.exception.AppException;
 import com.taskapp.model.Log;
 
 public class LogDataAccess {
@@ -25,34 +33,44 @@ public class LogDataAccess {
      *
      * @param log 保存するログ
      */
-public void save(Log log) {
-        try (FileWriter writer = new FileWriter(filePath, true)) {
-            writer.append(log.getTaskCode() != 0 ? String.valueOf(log.getTaskCode()) : "N/A")  
-              .append(",")
-              .append(String.valueOf(log.getChangeUserCode()))
-              .append(",")
-              .append(String.valueOf(log.getStatus()))
-              .append(",")
-              .append(log.getChangeDate().toString())
-              .append("\n");
+    public void save(Log log) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
+            String logData = log.getTaskCode() + "," + log.getChangeUserCode() + "," + log.getStatus() + "," + log.getChangeDate();
+            writer.write(logData);
+            writer.newLine();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    
+
 
     /**
      * すべてのログを取得します。
      *
      * @return すべてのログのリスト
      */
-    // public List<Log> findAll() {
-    //     try () {
-
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    //     return null;
-    // }
+   public List<Log> findAll() throws AppException {
+    List<Log> logs = new ArrayList<>();
+    try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] fields = line.split(",");
+            if (fields.length == 4) {
+                int taskCode = Integer.parseInt(fields[0].trim());
+                int changeUserCode = Integer.parseInt(fields[1].trim());
+                int status = Integer.parseInt(fields[2].trim());
+                LocalDate changeDate = LocalDate.parse(fields[3].trim());
+                Log log = new Log(taskCode, changeUserCode, status, changeDate);
+                logs.add(log);
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+        throw new AppException("ログ読み込み中にエラーが発生しました");
+    }
+    return logs;
+}
 
     /**
      * 指定したタスクコードに該当するログを削除します。
@@ -60,13 +78,20 @@ public void save(Log log) {
      * @see #findAll()
      * @param taskCode 削除するログのタスクコード
      */
-    // public void deleteByTaskCode(int taskCode) {
-    //     try () {
+public void deleteByTaskCode(int taskCode) throws AppException {
+        List<Log> logs = findAll();
+        logs.removeIf(log -> log.getTaskCode() == taskCode);
 
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    // }
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            for (Log log : logs) {
+                writer.write(log.toCsvFormat());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AppException("ログ削除中にエラーが発生しました");
+        }
+    }
 
     /**
      * ログをCSVファイルに書き込むためのフォーマットを作成します。

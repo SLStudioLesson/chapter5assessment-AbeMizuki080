@@ -15,6 +15,10 @@ public class Log {
         this.changeDate = changeDate;
     }
 
+    public String toCsvFormat() {
+        return taskCode + "," + changeUserCode + "," + status + "," + changeDate;
+    }
+
     public int getTaskCode() {
         return this.taskCode;
     }

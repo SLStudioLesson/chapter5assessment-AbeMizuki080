@@ -1,15 +1,17 @@
 package com.taskapp.dataaccess;
 
 import java.util.List;
+
+import com.taskapp.exception.AppException;
 import com.taskapp.model.Task;
 import com.taskapp.model.User;
-import com.taskapp.model.Log;
-
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import com.taskapp.model.*;
 
 public class TaskDataAccess {
 
@@ -76,20 +78,16 @@ public class TaskDataAccess {
      * @param task 保存するタスク
      */
     public void save(Task task) {
-        try (FileWriter writer = new FileWriter("tasks.csv", true)) {
-            
-            writer.append(String.valueOf(task.getCode())) 
-                  .append(",")
-                  .append(task.getName())  
-                  .append(",")
-                  .append(String.valueOf(task.getStatus())) 
-                  .append(",")
-                  .append(String.valueOf(task.getRepUser().getCode())) 
-                  .append("\n");
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
+            String taskData = task.getCode() + "," + task.getName() + "," + task.getStatus() + "," + task.getRepUser().getCode();
+            writer.write(taskData);
+            writer.newLine();
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }    
+    }
+    
+
     
 
     /**
@@ -97,14 +95,15 @@ public class TaskDataAccess {
      * @param code 取得するタスクのコード
      * @return 取得したタスク
      */
-    // public Task findByCode(int code) {
-    //     try () {
-
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    //     return null;
-    // }
+    public Task findByCode(int taskCode) {
+        List<Task> tasks = loadTasks(); 
+        for (Task task : tasks) {
+            if (task.getCode() == taskCode) {
+                return task; 
+            }
+        }
+        return null; 
+    }
 
     /**
      * タスクデータを更新します。
@@ -122,14 +121,34 @@ public class TaskDataAccess {
      * コードを基にタスクデータを削除します。
      * @param code 削除するタスクのコード
      */
-    // public void delete(int code) {
-    //     try () {
-
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    // }
-
+    public void delete(int taskCode) throws AppException {
+        List<Task> tasks = loadTasks();
+        Task taskToDelete = null;
+    
+        for (Task task : tasks) {
+            if (task.getTaskCode() == taskCode) {
+                taskToDelete = task;
+                break;
+            }
+        }
+    
+        if (taskToDelete == null) {
+            throw new AppException("タスクが存在しません");
+        }
+    
+        tasks.remove(taskToDelete);
+    
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            for (Task task : tasks) {
+                writer.write(task.toCsvFormat());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AppException("タスクの削除中にエラーが発生しました");
+        }
+    }
+    
     /**
      * タスクデータをCSVに書き込むためのフォーマットを作成します。
      * @param task フォーマットを作成するタスク
@@ -137,4 +156,31 @@ public class TaskDataAccess {
      */
     // private String createLine(Task task) {
     // }
+
+    private List<Task> loadTasks() {
+        List<Task> tasks = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                
+                int taskCode = Integer.parseInt(fields[0].trim());
+                String taskName = fields[1].trim();
+                int status = Integer.parseInt(fields[2].trim());
+                
+                int repUserCode = Integer.parseInt(fields[3].trim());
+   
+                String repUserName = "担当者名";  
+                String repUserEmail = "unknown@example.com";  
+                String repUserPassword = "password";  
+                
+                User assignedUser = new User(repUserCode, repUserName, repUserEmail, repUserPassword);
+                
+                tasks.add(new Task(taskCode, taskName, status, assignedUser));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return tasks;
+}
 }

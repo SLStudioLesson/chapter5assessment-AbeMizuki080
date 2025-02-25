@@ -62,7 +62,7 @@ public class UserDataAccess {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
 
-            br.readLine(); // ヘッダ行をスキップ
+            br.readLine(); 
 
             while ((line = br.readLine()) != null) {
                 String[] data = line.split(",");

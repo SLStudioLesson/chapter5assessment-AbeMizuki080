@@ -7,6 +7,7 @@ import com.taskapp.exception.AppException;
 import com.taskapp.model.Log;
 import com.taskapp.model.Task;
 import com.taskapp.model.User;
+import com.taskapp.logic.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -120,6 +121,14 @@ public class TaskLogic {
      * @param code タスクコード
      * @throws AppException タスクコードが存在しない、またはタスクのステータスが完了でない場合にスローされます
      */
-    // public void delete(int code) throws AppException {
-    // }
+    public void delete(int taskCode) throws AppException {
+        Task task = taskDataAccess.findByCode(taskCode);
+        if (task == null) {
+            throw new AppException("存在するタスクコードを入力してください");
+        }
+
+        taskDataAccess.delete(taskCode);
+
+        logDataAccess.deleteByTaskCode(taskCode);
+    }
 }
